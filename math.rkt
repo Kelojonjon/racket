@@ -60,6 +60,32 @@
 (define (sequence x procedure steps)
   (cons x (math_sequence x procedure steps '())))
 
+;; Categorize integers in a range, into groups or same modulo-values
+(define (math_modulo_chart x y mod steps container)
+  (cond
+    [(> steps 0)
+     (let ([new_container (cons (collect x y mod) container)])
+       (math_modulo_chart (+ x 1) y mod (- steps 1) new_container))]
+    [else (reverse container)]))
+
+;; Wrapper for math_modulo_chart
+(define (modulo_chart x y mod)
+  (math_modulo_chart x y mod mod '()))
+
+;; Return the sum of all the values in the list
+(define (math_list_sum sum container)
+  (cond
+    [(null? container) sum]
+    [else (math_list_sum (+ sum (car container))(cdr container))]))
+
+;; Wrapper for math_list_sum
+(define (list_sum container)
+  (math_list_sum 0 container))
+
+;; Return the average of a list
+(define (list_average container)
+  (/ (list_sum container) (length container)))
+
 ;; Collect 2 points from both sides of a point, from a set distance away
 (define (center_interval center diameter)
   (let* (
@@ -139,17 +165,6 @@
   (cond
     [(= number 0) '(0)]
     [else (math_num->bin number '() )]))
-
-;; Turn a binary number to decimal format
-;; Number needs to be in a list format
-(define (bin_to_num bin res x)
-  (cond
-    [(null? bin) res]
-    [(and (= (car bin) 1)(= x 0))
-       (bin_to_num (cdr bin) (+ res (expt 2 x)) (- x 1))]
-    [(= (car bin) 1) 
-       (bin_to_num (cdr bin) (+ res (expt 2 x)) (- x 1))]
-    [else (bin_to_num (cdr bin) res (- x 1))]))
 
 ;; Number to binary usiing horners method (whiich is superior to my approach)
 ;; Number must be in a list format
