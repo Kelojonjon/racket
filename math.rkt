@@ -24,29 +24,53 @@
 ;; Speed of light
 (define *c* 299792458)
 
+;; Pi
+(define pi 3.14159)
+
 
 
 ;; Math
 
-;; Collect a list of numbers from x..y
-(define (math_collect x y container)
+;; Collect numbers in x...y range with a chosen stepsize
+(define (math_collect x y step container)
   (cond
-    [(> y (- x 1))
-     (let ([new_container (cons y container)]) ;; Create a "new version of the old var with the new y added" with linked lists
-       (math_collect x (- y 1) new_container))]
+    [(>= y x)
+     (let ([new_container (cons y container)])
+        (math_collect x (- y step) step new_container))]
     [else container]))
 
 ;; Wrapper for math_collect
-(define (collect x y)
-  (math_collect x y '()))
+(define (collect x y [step 1])
+  (let (
+        [offset (modulo (abs (- x y)) step)]
+        )(math_collect x (- y offset) step '())))
+
+;; Repeat a custom-rule on any number for certain amount of steps,
+(define (math_sequence x procedure steps container)
+  (let (
+        [new_x (procedure x)]
+        )
+  (cond
+    [(> steps 0)
+     (let ([new_container (cons new_x container)])
+       (math_sequence new_x procedure (- steps 1) new_container))]
+    [else (reverse container)])))
+
+;; Wrapper for math_sequence
+(define (sequence x procedure steps)
+  (cons x (math_sequence x procedure steps '())))
 
 ;; Collect 2 points from both sides of a point, from a set distance away
-(define (center_interval center radius)
+(define (center_interval center diameter)
   (let* (
-         [pnt_low (- center radius)]
-         [pnt_upp (+ center radius)]
-         )
-    (list pnt_low pnt_upp)))
+        [radius (/ diameter)]
+        [point_a (- center radius)]
+        [point_b (+ center radius)] 
+        )(list point_a point_b)))
+
+;; Find the percentage change on the terms of old-value
+(define (percentage_change new_value old_value)
+  (abs (- 100 (* 100 (/ new_value old_value)))))
 
 ;; Absolute distance between 2 points
 (define (distance_between x y)
@@ -82,6 +106,25 @@
     (cond
       [(<= target 0) #f]
       [else (math_binary_sqrt target x y tol_low tol_upp)])))
+
+;; Newtons method for finding the square root
+(define (math_newton_sqrt target x tol_low tol_up)
+  (let* (
+        [new_x (/ (+ x (/ target x)) 2)]
+        [square (* x x)]
+        )
+    (cond
+      [(and (>= square tol_low) (<= square tol_up)) x]
+      [else (math_newton_sqrt target new_x tol_low tol_up)])))
+
+;; The wrapper for the math_newton_sqrt
+;; x for initial guess, tolerance for accuracy
+(define (newton_sqrt target x tol)
+  (let* (
+        [tolerance (center_interval target tol)]
+        [tol_low (car tolerance)]
+        [tol_up (car (cdr tolerance))]
+        )(math_newton_sqrt target x tol_low tol_up)))
 
 ;; Turn a number into binary format
 (define (math_num->bin number container)
@@ -149,4 +192,21 @@
     [else
       (let ([new_container (cons data container)])
         (pad_list data (- amount 1) new_container))]))
-    
+
+;; Area of a circle
+(define (area_circle radius)
+  (* pi (expt radius 2)))
+
+;; Area of the band between 2 circles
+(define (area_circles_band x y)
+  (abs (- (area_circle x) (area_circle y))))
+
+; Area of a perfect square
+(define (area_square x)
+  (* x x))
+
+; Volume of a cube
+(define (volume_cube x y z)
+  (* x y z))
+
+
