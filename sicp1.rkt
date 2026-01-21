@@ -186,3 +186,15 @@
       [(< perc_change perc) new_x]
       [else (newton_crt target new_x perc)])))
 
+;; Racket allows us to use "blocks" and "lexical scoping" to structure out programs
+;; In other words we can define procedures inside other procedures, thus freeing namespace or the main file
+;; Lexical scoping means just that as we define procedures inside procedures, they share the same scope (I assume the "higher"
+;; function doesnt share the "child" functions scopes though)
+(define (mother_function x y)
+  (define (lexical_add)
+    (+ x y))
+  (define (non_lexical_sub x y)
+    (- x y))
+  (list (lexical_add) (non_lexical_sub x y)))
+
+

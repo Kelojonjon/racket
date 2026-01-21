@@ -86,47 +86,6 @@
 (define (list_average container)
   (/ (list_sum container) (length container)))
 
-;; The iterator for prime? predicant
-(define (math_prime? num container)
-  (cond
-    [(null? container) #t]
-    [(= 0 (modulo num (car container))) #f]
-    [else (math_prime? num (cdr container))]))
-
-;; Returns true if a number is a prime
-(define (prime? num)
-  (cond
-    [(<= num 1) #f]
-    [(and (not (= num 2)) (= 0 (modulo num 2))) #f]
-    [else (let ([divisors (collect 3 (floor (sqrt num)) 2)])
-            (math_prime? num divisors))]))
-
-;; Returns all the primes in a given container
-(define (math_list_primes container result) 
-  (cond
-    [(null? container) (reverse result)]
-    [(prime? (car container))
-     (let ([new_result (cons (car container) result)])
-       (math_list_primes (cdr container) new_result))]
-    [else (math_list_primes (cdr container) result)]))
-
-;; Wrapper for math_list_primes
-(define (list_primes container)
-  (math_list_primes container '()))
-
-;; Prime factorization of a number
-(define (math_factor num x container)
-  (cond
-    [(prime? num) (cons num container)]
-    [(= 0 x) container]
-    [(= 0 (modulo num x)) 
-     (math_factor x (- x 1) (cons (/ num x) container))]
-    [else (math_factor num (- x 1) container)]))
-                      
-;; Wrapper for math_factor
-(define (factor num)
-  (math_factor num (ceiling (/ num 2)) '()))
-
 ;; Collect 2 points from both sides of a point, from a set distance away
 (define (center_interval center diameter)
   (let* (
@@ -147,15 +106,12 @@
 (define (middlepoint x y)
   (/ (+ x y) 2))
 
-;; Returns the factorial of num
-(define (math_factorial num product)
+(define (factorial_iter num product)
   (cond
-    [(> num 1) (factorial (- num 1) (* product (- num 1)))]
+    [(> num 1) (factorial_iter (- num 1) (* product (- num 1)))]
     [else product]))
 
-;; Wrapper for math_factorial
-(define (factorial num)
-  (math_factorial num num))
+
 
 ;; Binary search for square root of the "target"
 ;; Search range "x".."y"
