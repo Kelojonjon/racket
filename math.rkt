@@ -114,18 +114,35 @@
 (define (list_primes container)
   (math_list_primes container '()))
 
-;; Prime factorization of a number
+;; Factorize a number into its prime numbers
 (define (math_factor num x container)
   (cond
-    [(prime? num) (cons num container)]
-    [(= 0 x) container]
-    [(= 0 (modulo num x)) 
-     (math_factor x (- x 1) (cons (/ num x) container))]
-    [else (math_factor num (- x 1) container)]))
-                      
+    [(> (* x x) num) (cons num container)]
+    [(= 0 (modulo num x)) (math_factor (/ num x) x  (cons x container))]
+    [else (math_factor num (+ x 1)  container)]))
+
 ;; Wrapper for math_factor
 (define (factor num)
-  (math_factor num (ceiling (/ num 2)) '()))
+  (math_factor num 2 '()))
+
+;; Simplify a list of numbers into (num amount) for each number
+;; Works with other data, like strings also!
+(define (math_simplify_factors x amount container next_container result)
+  (cond
+    [(null? container)
+     (if (null? next_container)
+         (cons (list x amount) result) 
+         (math_simplify_factors #f 0 next_container '() (cons (list x amount) result)))]
+    [(false? x) 
+     (math_simplify_factors (car container) 0 container '() result)]
+    [(equal? x (car container)) 
+     (math_simplify_factors x (+ 1 amount) (cdr container) next_container result)]
+    [else
+     (math_simplify_factors x amount (cdr container) (cons (car container) next_container) result)]))
+
+;; Wrapper for simplify factors
+(define (simplify_factors container)
+  (math_simplify_factors #f 0 container '() '()))
 
 ;; Collect 2 points from both sides of a point, from a set distance away
 (define (center_interval center diameter)
@@ -150,7 +167,7 @@
 ;; Returns the factorial of num
 (define (math_factorial num product)
   (cond
-    [(> num 1) (factorial (- num 1) (* product (- num 1)))]
+    [(> num 1) (math_factorial (- num 1) (* product (- num 1)))]
     [else product]))
 
 ;; Wrapper for math_factorial
