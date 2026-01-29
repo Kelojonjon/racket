@@ -31,6 +31,18 @@
 
 ;; Math
 
+;; Generate triangle numbers
+(define (gauss_sum n)
+  (/ (* n (+ n 1)) 2))
+
+;; Return 1 if two factors produce both a triangle and a perfect square
+(define (pells_equation x y)
+  (let (
+        [new_x (max x y)]
+        [new_y (min x y)]
+        )
+    (- (* new_x new_x) (* 2(* new_y new_y)))))
+
 ;; Collect numbers in x...y range with a chosen stepsize
 (define (math_collect x y step container)
   (cond
@@ -81,6 +93,20 @@
 ;; Wrapper for math_list_sum
 (define (list_sum container)
   (math_list_sum 0 container))
+
+;; Return the product of all the values in a list
+(define (math_list_product product container)
+  (cond
+    [(null? container) product]
+    [else (math_list_product (* product (car container))(cdr container))]))
+
+;; Wrapper for math_list_product
+(define (list_product container)
+  (math_list_product 1 container))
+
+;; Evaluate powers in form (num power)
+(define (eval_power container)
+  (expt (car container) (cadr container)))
 
 ;; Return the average of a list
 (define (list_average container)
@@ -144,10 +170,38 @@
 (define (simplify_factors container)
   (math_simplify_factors #f 0 container '() '()))
 
+;; Return a list of common factors between 2 numbers in from ((num pwr) (num pwr))
+(define (math_common_factors container_a container_b container_c result)
+  (cond
+    [(null? container_a) result]
+    [(null? container_b) (math_common_factors (cdr container_a) container_c container_c result)]
+    [(= (car (car container_a)) (car (car container_b)))
+     (if (> (cadr (car container_a)) (cadr (car container_b)))
+         (math_common_factors (cdr container_a) container_c container_c (cons (car container_b) result))
+         (math_common_factors (cdr container_a) container_c container_c (cons (car container_a) result)))]
+    [else (math_common_factors container_a (cdr container_b) container_c result)]))
+
+;; Wrapper for math_common_factors
+(define (common_factors num_a num_b)
+  (let (
+        [factors_a (simplify_factors (factor num_a))]
+        [factors_b (simplify_factors (factor num_b))]
+        )
+    (math_common_factors factors_a factors_b factors_b '())))
+
+;; Simplify a ratio 
+(define (simplify_ratio num_a num_b)
+  (let* (
+        [shared_factors (map eval_power (common_factors num_a num_b))]
+        [g_cd (list_product shared_factors)]
+        [new_a (/ num_a g_cd)]
+        [new_b (/ num_b g_cd)]
+        )(list new_a new_b)))
+
 ;; Collect 2 points from both sides of a point, from a set distance away
 (define (center_interval center diameter)
   (let* (
-        [radius (/ diameter)]
+        [radius (/ diameter 2)]
         [point_a (- center radius)]
         [point_b (+ center radius)] 
         )(list point_a point_b)))
