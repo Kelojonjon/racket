@@ -189,12 +189,252 @@
 ;; Racket allows us to use "blocks" and "lexical scoping" to structure out programs
 ;; In other words we can define procedures inside other procedures, thus freeing namespace or the main file
 ;; Lexical scoping means just that as we define procedures inside procedures, they share the same scope (I assume the "higher"
-;; function doesnt share the "child" functions scopes though)
+;; function doesnt share the "child" functions scopes though) <- which is true! well done myself from the past!
 (define (mother_function x y)
   (define (lexical_add)
     (+ x y))
   (define (non_lexical_sub x y)
     (- x y))
   (list (lexical_add) (non_lexical_sub x y)))
+
+
+
+; 1.2 Procedures and the processes they generate
+;
+; I assume this chapter is pretty much just decoding what it looks like
+; when some hands on procedures execute their call stack
+; of course which is just basicly ast tree in its simplest form, until we move to more complex patterns like streams
+; Which i havent yet actually done in lisp, lazy streams-n stuff
+
+
+; Talking about recursive and iterative procedures and processes
+; Procedure is our code process is what it summons
+; The book uses calculating factorials as a example, we dont have much more imagination so so do we
+
+; Until we hit n = 1, our applicative order keeps on calling stacks with (recursive-procedure (- n 1))
+; when we hit 1 we dont need to do any more function calls, and instead the last call collapses into 1
+; At this point we have basicly a fully substituted "formula" of the problem, which will cause the process
+; to bounce back and reduce its way into the final answer
+(define (recursive-procedure n)
+  (if (= n 1)
+      1
+      (* n (recursive-procedure (- n 1)))))
+
+; Iterative approach or how i would call it myself tail-recursive does the operation on the way to the last function-call
+; What this means is that we carry all our needed parameters with us manipulate them, and then call the same function
+; with the manipulated parameters until we hit a "base-case", honestly i dont know why we should use the traditional
+; recursion at all, this iterative approach is much more memory efficient. <- (some mathemathical structures for example
+; naturally use traditional recursion making the code much simpler)
+(define (iterative-procedure n)
+  ;unlike the book we will use let loops instead of definitions to "hide" the smaller
+  ;specialized functions from the global scope
+  (let loop (
+             [prod 1]
+             [num 1]
+             )
+    (if (= num n)
+        (* prod num)
+        (loop (* prod num) (+ 1 num)))))
+
+
+; Exercise 1.9
+; Two procedures whom both define a method for adding 2 psotitive integers.
+; We use procedures inc which increments its argument by 1 and dec which decrements its argument by 1
+; Trace the execution of both of the processes and find out is one is iterative or recursive
+
+; Lets first define our inc and dec to make it work
+(define (inc n)
+  (+ n 1))
+
+(define (dec n)
+  (- n 1))
+
+; Procedure A
+; We have a traditional recursive function
+; We call plus and decrement a until we hit 0, then we return b and start incrementing it until we clear the stack
+(define (recursive-plus a b)
+  (if (= a 0)
+      b
+      (inc (recursive-plus (dec a) b))))
+
+; Procedure B
+; We have a iterative function here
+; We simply modulate the arguments in the function call itself, until we hit a = 0
+; then we just return the already modulated value for b
+(define (iterative-plus a b)
+  (if (= a 0)
+      b
+      (iterative-plus (dec a) (inc b))))
+
+
+; Exercise 1.10
+; Trace the process of arckermans function
+; These are just best done on blank a4, as you can see you can basicly just turn every problem into a nice little tree
+; For example our (A 1 10) returns (** 2 10) -> 1024
+; Whats the mathemathical rule though?
+; For (A 2 4) we get (** 2 16) for (A 1 10) we get (** 2 10)
+(define (A x y)
+  (cond
+    [(= y 0) 0]
+    [(= x 0) (* 2 y)]
+    [(= y 1) 2]
+    [else (A (- x 1)
+             (A x (- y 1)))]))
+
+
+; 1.2.2 Tree recursion
+; The book shows us a implementation of fibbionacci sequence
+; First to understand the problem we will make our own implementation that will be tail recursive
+; Since we rely on knowing the last 2 numbers generated and we havent found a exiplit formula for fibbionacci,
+; we start from a premade start, its not the mathemathical definition of the problem but it works wonders
+(define (tail-fibbionacci max-gen)
+  (let loop (
+             [gen 2]
+             [result '(1 0)]
+             )
+    (cond
+      [(or (< gen 2) (= gen max-gen)) (reverse result)]
+      [else (let (
+                  [next-num (+ (car result) (cadr result))]
+                  )
+              (loop (+ 1 gen) (cons next-num result)))]
+      )))
+
+; We could also use a rolling window or scalar version of the same fibbioncci, but in this chapter, we are talking about
+; tree recursion, so lets stick to the point.
+; This way of recursive computing should create a much more complex "tree-shape" when used to calculate fibbionacci sequences
+(define (fib n)
+  (cond
+    [(= n 0) 0]
+    [(= n 1) 1]
+    [else
+      (+ (fib (- n 1))
+         (fib (- n 2)))]))
+; So what exactly is happening here?
+; For ever (fib n) we split into 2 child nodes, this creates the tree shape automaticly
+; Each leave hits the "base case" at some point collapsing the recursive funtion call into a value
+; For each horizontal layer in the tree we created (fib n - 1) + (fib n - 2) we peform the procedure which collapses
+; to a new value. Basicly its just recursion but with several branching nodes, the "operation" gets peformed at the split
+; points.
+;
+; Anyways i feel like the Chapter 1.2 tries to show me that we can use the actual computational structure as a computational
+; tool. In ackermans function there are those "invisible intermediate steps" the process creates, that make the
+; values expontiate so unintuitively, and they are generated by the underlying "structure" that the process makes, thus
+; making calculating the end result from the input by hand so hard
+
+
+; Counting change
+; The books talks about a procedure that allows us to calculate all the ways we can
+; make X amount of money out of Euros and Cents.
+; I will attempt solving the problem on my own first of course, using this new "structural medium" as the tool to calculate with!
+
+; Decoding the algorithm was surely much much harder than i expected, took me around 12 hours and AI assistance to get
+; the logic down
+
+; We are using set theory to split our "remaining amount" into all possible subsets of a set that contains
+; all the possible tuples that can make our "remaining amount" --> S = {(a(5), b(10), c(20), d(50), e(100))...}
+; So set S contains all of the possible combinations of values 5, 10, 20, 50, 100 to make our "remaining amount"
+; We will then use two variables -> (amount options) to systematicly break down the set into all of its subsets.
+; We will do this by limiting our options -> (set a rule like a = 0, or b = 0) OR by decrementing the "max integer"
+; we can plug into a b c...   (a - 1(5), b(10).......)
+; This allows us to systematicly create every possible subset of the original set!
+; The base case for deciding which node of our tree is a unique combo, is a little fuzzy, but
+; if our amount equals 0. it means we can make the remaining amount 0 exactly one way (with nothing!)
+; If our available options hit 0, it means we dont have options to make our remaining amount!
+; In other words if we hit a base case where (amount = 0) this means we have completed our tuple perfectly!
+; From this we can see that what our algorithm does is either limiting options by setting them to equal 0
+; Or by reducing the "current option" from our remaining amount  (a - 1(5)....)
+; Lets just get going!
+(define (count-change amount)
+  (define (helper-options n)
+    (cond
+      [(= n 1) 5]
+      [(= n 2) 10]
+      [(= n 3) 20]
+      [(= n 4) 50]
+      [(= n 5) 100]
+      ))
+  (let loop (
+             [amnt amount]
+             [options 5]
+             )
+    (cond
+      [(= amnt 0) 1]
+      [(< amnt 0) 0]
+      [(= options 0) 0]
+      [else (+ (loop amnt (- options 1))
+               (loop (- amnt (helper-options options)) options))]
+      )))
+
+; Now this algorithm does work, but its not the most efficient way to solve this problem
+; We could desing a more efficient algorithm, using caching
+; Basicly we would trade cpu cycles for memory, by saving each already solved function calls result into a cache
+
+; Well here is one incompleted way to try to approach the problem, we are creating a list at every base case
+; that contains (remaining-amount options running-sum)
+; We then combine the sublists into one going up
+; It falls down to the inefficiency of creating the list itself, and searching the list
+; It mainly acts as a fancy way to visualize our algorithm in action though!
+(define (count-change amount)
+  (define (helper-options n)
+    (cond
+      [(= n 1) 5]
+      [(= n 2) 10]
+      [(= n 3) 20]
+      [(= n 4) 50]
+      [(= n 5) 100]
+      ))
+  (let loop (
+             [amnt amount]
+             [options 5]
+             )
+    (cond
+      [(= amnt 0) (list 1 (list amnt options 1))]
+      [(< amnt 0) (list 0 (list amnt options 0))]
+      [(= options 0) (list 0 (list amnt options 0))]
+      [else (let* (
+                   [a-branch (loop amnt (- options 1))]
+                   [b-branch (loop (- amnt (helper-options options)) options)]
+                   [sum (+ (car a-branch) (car b-branch))]
+                   [result (let list-loop (
+                                             [a-list (cdr a-branch)]
+                                             [b-list (cdr b-branch)]
+                                             [new-list '()]
+                                             )
+                               (cond
+                                 [(and (null? a-list) (null? b-list)) (cons sum (cons (list amnt options sum) new-list))]
+                                 [(and (null? a-list) (not (null? b-list)))
+                                  (list-loop a-list (cdr b-list) (cons (car b-list) new-list))]
+                                 [(and (not (null? a-list)) (null? b-list))
+                                  (list-loop (cdr a-list) b-list (cons (car a-list) new-list))]
+                                 [else
+                                   (list-loop (cdr a-list) (cdr b-list) (cons (car a-list) (cons (car b-list) new-list)))]
+                                 ))]
+                   ) result )])))
+
+; Lets now try hash-tables instead
+; We need to pass a mutable hash table along our whole process
+(define (count-change amount)
+  (define (helper-options n)
+    (cond
+      [(= n 1) 5]
+      [(= n 2) 10]
+      [(= n 3) 20]
+      [(= n 4) 50]
+      [(= n 5) 100]
+      ))
+  (let loop (
+             [amnt amount]
+             [options 5]
+             )
+    (cond
+      [(= amnt 0) 1]
+      [(< amnt 0) 0]
+      [(= options 0) 0]
+      [else (+ (loop amnt (- options 1))
+               (loop (- amnt (helper-options options)) options))]
+      )))
+
+
 
 

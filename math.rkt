@@ -346,4 +346,74 @@
 (define (volume_cube x y z)
   (* x y z))
 
+; Is number a palindrome?
+; Who uses substrings really?
+(define (palindrome? n)
+  (if (= 0 n) 0
+      (let* (
+             [abs-n (abs n)]
+             [n-len (let loop (
+                               [power 1]
+                               [len 0]
+                               )
+                      (if (< 1 (/ power abs-n)) len
+                          (loop (* 10 power) (+ 1 len))))]
+             [denom (expt 10 (- n-len 1))]
+             [sep-num (let loop (
+                                 [deno denom]
+                                 [nume abs-n]
+                                 [result '()]
+                                 )
+                        (if (< deno 1) result
+                            (let (
+                                  [quot (quotient nume deno)]
+                                  [rem (remainder nume deno)]
+                                  )
+                              (loop (/ deno 10) rem (cons quot result)))))]
+             [rev-sep-num (reverse sep-num)]
+             )
+        (let loop (
+                   [sep sep-num]
+                   [rev rev-sep-num]
+                   )
+          (cond
+            [(null? sep) abs-n]
+            [(= (car sep) (car rev)) (loop (cdr sep) (cdr rev))]
+            [else #f]
+            )))))
+
+; Palindrome seed detectector
+(define (palindrome-list x y step procedure)
+  (let* (
+         [collection (collect x y step)]
+         [proc-pali-coll (map palindrome? (map procedure collection))]
+         )
+    (let loop (
+               [coll collection]
+               [pro-pal-col proc-pali-coll]
+               [pairs '()]
+               )
+      (if (null? coll) (reverse pairs)
+          (if (number? (car pro-pal-col))
+              (loop (cdr coll) (cdr pro-pal-col) (cons (list (car coll) (car pro-pal-col)) pairs))
+              (loop (cdr coll) (cdr pro-pal-col) pairs))))))
+
+; Divisibility test for our palindrome detector for further investigating
+; Returns the number if divisible by "div" else #f
+; Targets b out of (a b) in our palindrome-list
+(define (divisible div pal-list)
+  (let loop (
+             [result '()]
+             [p-list pal-list]
+             )
+    (if (null? p-list) result
+        (let* (
+               [pair (car p-list)]
+               [parent (car pair)]
+               [child (cadr pair)]
+               [child-div (if (= 0 (modulo child div)) child #f)]
+               )
+          (loop (cons (list parent child-div) result) (cdr p-list))))))
+
+
 
